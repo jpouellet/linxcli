@@ -9,8 +9,9 @@ use warnings 'all';
 
 use constant VERSION => 'LinxCLI/1.0';
 my %domains = (
+	'linxbin' => 'https://linxb.in',
 	'linxli' => 'https://linx.li',
-	'linxbin' => 'https://linxb.in'
+	'bingg' => 'https://bin.gg'
 	# I could add more, but all current linxapi compliant sites upload
 	# to the same "database" anyway, and these are (currently) the only
 	# ones that support SSL.
@@ -32,13 +33,21 @@ unless (defined $linxcli_dir) {
 	}
 }
 
-our $domain = ((values %domains)[0]);
+our $domain;
 our $expires;
 our $rand_file;
 our $rand_bare;
 our $name;
 our $mode = 'upload';
 our $global_delete_key;
+
+# use linxli as the default domain because it is designed
+# for arbitrary binary files instead of primarily text.
+if (exists $domains{'linxli'}) {
+	$domain = $domains{'linxli'};
+} else {
+	$domain = (values %domains)[0];
+}
 
 if (index($0, 'rm') != -1 || index($0, 'del') != -1 || index($0, 'un') != -1) {
 	$mode = 'delete';
@@ -178,7 +187,7 @@ sub upload {
 	my $res = $ua->request($req);
 
 	unless ($res->is_success) {
-		warn $res->status_line . "\n";
+		warn "$filename: " . $res->status_line . "\n";
 		return -1;
 	}
 
@@ -252,7 +261,7 @@ sub rm {
 	my $res = $ua->request($req);
 
 	unless ($res->is_success) {
-		warn $res->status_line . "\n";
+		warn "$filename: " . $res->status_line . "\n";
 		return -1;
 	}
 
@@ -350,8 +359,8 @@ if ($mode eq 'upload') {
 
 	if (defined $global_delete_key) {
 		if (@ARGV != 1) {
-			warn "Error: In deletion mode, --key can only be " .
-			     "used to delete one file at a time!\n";
+			warn "Error: --key can only be used to " .
+			     "delete one file at a time!\n";
 			return -1;
 		}
 		if (rm($ARGV[0], $global_delete_key)) {
